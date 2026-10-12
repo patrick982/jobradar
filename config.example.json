@@ -1,0 +1,52 @@
+{
+  "location": "Wien",
+  "radius_km": 25,
+  "keywords": [
+    "Softwareentwickler",
+    "Python",
+    "Systemadministrator",
+    "IT Support",
+    "ERP"
+  ],
+  "sources": ["karriere", "willhaben", "jobsat", "ams"],
+  "max_pages": 5,
+  "request_delay": 1.0,
+  "db_path": "jobradar.db",
+  "ams": {
+    "key": "",
+    "base": "https://jobs.ams.at",
+    "path": "/public/emps/api/search"
+  },
+  "rank": {
+    "core": [
+      "it", "edv", "informatik", "software", "entwickler", "programmier",
+      "systemadmin", "sysadmin", "linux", "python", "sql", "datenbank",
+      "devops", "applikation", "erp", "sap", "docker", "frontend",
+      "backend", "fullstack", "netzwerk", "infrastruktur", "cloud",
+      "webentwickl", "applikationsbetreu"
+    ],
+    "core_penalty": 40,
+    "core_label": "IT-Bezug",
+    "employment": { "teilzeit": 40, "beide": 25 },
+    "weights": {
+      "erp": 10, "sql server": 8, "sql": 7, "datenbank": 6,
+      "azure": 7, "power platform": 7, "python": 8, "scripting": 5,
+      "automatisierung": 5, "api": 4, "linux": 7, "windows": 3,
+      "javascript": 3, "support": 6, "applikation": 6, "schnittstelle": 5,
+      "projektleitung": 6, "projekt": 4, "digitalisierung": 6,
+      "consultant": 6, "beratung": 4, "techniker": 4, "engineer": 4,
+      "docker": -4, "kubernetes": -6, "vmware": -4, "cisco": -4,
+      "java": -2, "c#": -2, "devops": -2, "security": -1,
+      "leiter": -15, "leitung": -12, "lead": -12, "head of": -15,
+      "architekt": -12, "architect": -12, "geschäftsführ": -15,
+      "senior": -3, "werkstudent": -30, "praktikum": -30, "trainee": -12,
+      "verkauf": -10, "assistenz": -10, "sekretariat": -15, "lager": -15
+    },
+    "boost": [
+      "20 stunden", "20h", "homeoffice", "home-office", "hybrid",
+      "geringfügig", "teilzeit"
+    ],
+    "location": 10,
+    "homeoffice": 5
+  }
+}

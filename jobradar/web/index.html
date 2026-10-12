@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job-Radar Graz</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --panel2: #1e222b; --line: #2a2f3a;
+    --fg: #e6e9ef; --muted: #8b93a3; --accent: #4f9cf9; --green: #35c07a;
+    --amber: #e0a33a; --red: #e05a5a; --violet: #9a7cf5;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+    font: 14px/1.5 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  header { position: sticky; top: 0; z-index: 5; background: rgba(15,17,21,.92);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); padding: 14px 20px; }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  h1 { font-size: 17px; margin: 0 12px 0 0; }
+  .stats { color: var(--muted); font-size: 13px; }
+  .stats b { color: var(--fg); }
+  input, select, button { background: var(--panel2); color: var(--fg);
+    border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font: inherit; }
+  input[type=search] { min-width: 220px; }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  main { padding: 18px 20px 60px; max-width: 1100px; margin: 0 auto; }
+  .job { background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px 16px; margin-bottom: 12px; }
+  .job.teaser { border-left: 3px solid var(--green); }
+  .job .top { display: flex; gap: 12px; align-items: flex-start; }
+  .score { min-width: 46px; height: 46px; border-radius: 10px; display: grid;
+    place-items: center; font-weight: 700; font-size: 16px; background: var(--panel2);
+    border: 1px solid var(--line); }
+  .score.hi { color: var(--green); border-color: var(--green); }
+  .score.mid { color: var(--amber); border-color: var(--amber); }
+  .title { font-size: 15px; font-weight: 600; margin: 0; }
+  .title a { color: var(--fg); text-decoration: none; }
+  .title a:hover { color: var(--accent); text-decoration: underline; }
+  .meta { color: var(--muted); font-size: 13px; margin-top: 3px; }
+  .pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .pill { font-size: 12px; padding: 2px 8px; border-radius: 999px;
+    background: var(--panel2); border: 1px solid var(--line); color: var(--muted); }
+  .pill.tz { color: var(--green); border-color: #2b6b48; }
+  .pill.ho { color: var(--violet); border-color: #4a3d7a; }
+  .pill.src { color: var(--accent); border-color: #2b4a6b; }
+  .reasons { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .reason { font-size: 12px; color: var(--muted); background: #12151b;
+    border: 1px dashed var(--line); border-radius: 6px; padding: 2px 7px; }
+  .actions { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .actions button { font-size: 12.5px; padding: 5px 10px; }
+  .actions .active { border-color: var(--accent); color: var(--accent); }
+  .grow { flex: 1; }
+  .status { font-size: 12px; color: var(--muted); }
+  .empty { color: var(--muted); text-align: center; padding: 40px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="row">
+    <h1>Job-Radar Graz</h1>
+    <input id="q" type="search" placeholder="Suche Titel / Firma / Ort…">
+    <select id="status">
+      <option value="">alle Status</option>
+    </select>
+    <label class="status"><input type="checkbox" id="tz"> nur Teilzeit</label>
+    <label class="status"><input type="checkbox" id="exp"> abgelaufene zeigen</label>
+    <button id="reload">Aktualisieren</button>
+    <button id="check">Live prüfen</button>
+    <span class="grow"></span>
+    <span class="stats" id="stats"></span>
+  </div>
+</header>
+<main id="list"><div class="empty">Lade…</div></main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+let STATUSES = [];
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  return r.json();
+}
+
+function scoreClass(s) { return s >= 60 ? "hi" : s >= 30 ? "mid" : ""; }
+
+function render(jobs) {
+  const list = $("#list");
+  if (!jobs.length) { list.innerHTML = '<div class="empty">Keine Jobs.</div>'; return; }
+  list.innerHTML = jobs.map(j => `
+    <div class="job ${j.employment === "teilzeit" ? "teaser" : ""}">
+      <div class="top">
+        <div class="score ${scoreClass(j.score)}">${j.score}</div>
+        <div class="grow">
+          <p class="title"><a href="${j.url}" target="_blank" rel="noopener">${esc(j.title)}</a></p>
+          <div class="meta">${esc(j.company)} · ${esc(j.location)}${j.salary ? " · " + esc(j.salary) : ""}</div>
+          <div class="pills">
+            <span class="pill src">${esc(j.source)}</span>
+            <span class="pill ${j.employment.includes("teilzeit") || j.employment === "beide" ? "tz" : ""}">${esc(j.employment)}</span>
+            ${j.homeoffice ? '<span class="pill ho">Homeoffice</span>' : ""}
+            ${j.live === 0 ? '<span class="pill" style="color:var(--red);border-color:#6b2b2b">abgelaufen</span>' : ""}
+            ${j.posted ? `<span class="pill">${esc(j.posted)}</span>` : ""}
+          </div>
+          ${reasons(j.reasons)}
+        </div>
+      </div>
+      <div class="actions">
+        ${STATUSES.map(s => `<button data-uid="${j.uid}" data-status="${s}" class="${j.status === s ? "active" : ""}">${s}</button>`).join("")}
+      </div>
+    </div>`).join("");
+}
+
+function reasons(raw) {
+  let arr = [];
+  try { arr = JSON.parse(raw || "[]"); } catch (e) {}
+  if (!arr.length) return "";
+  return `<div class="reasons">${arr.map(r => `<span class="reason">${esc(r)}</span>`).join("")}</div>`;
+}
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"]/g, c => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+async function load() {
+  const params = new URLSearchParams();
+  if ($("#q").value.trim()) params.set("q", $("#q").value.trim());
+  if ($("#status").value) params.set("status", $("#status").value);
+  if ($("#tz").checked) params.set("teilzeit", "1");
+  if ($("#exp").checked) params.set("show_expired", "1");
+  const data = await api("/api/jobs?" + params.toString());
+  STATUSES = data.statuses;
+  const sel = $("#status");
+  if (sel.options.length <= 1) {
+    data.statuses.forEach(s => {
+      const o = document.createElement("option"); o.value = s; o.textContent = s; sel.appendChild(o);
+    });
+  }
+  render(data.jobs);
+  const st = await api("/api/stats");
+  $("#stats").innerHTML = `<b>${st.total}</b> Jobs · <b>${st.teilzeit}</b> Teilzeit` +
+    (st.expired ? ` · <b>${st.expired}</b> abgelaufen (verborgen)` : "");
+}
+
+$("#list").addEventListener("click", async (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  if (b.dataset.status) {
+    await api("/api/status", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ uid: b.dataset.uid, status: b.dataset.status }) });
+    load();
+  }
+});
+
+let t;
+$("#q").addEventListener("input", () => { clearTimeout(t); t = setTimeout(load, 250); });
+$("#status").addEventListener("change", load);
+$("#tz").addEventListener("change", load);
+$("#exp").addEventListener("change", load);
+$("#reload").addEventListener("click", load);
+$("#check").addEventListener("click", async () => {
+  const b = $("#check"); b.textContent = "prüfe…"; b.disabled = true;
+  try {
+    const res = await api("/api/check", { method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ only_missing: true }) });
+    alert(`Live-Check: ${res.live} live, ${res.expired} abgelaufen, ${res.unknown} unprüfbar.`);
+  } finally { b.textContent = "Live prüfen"; b.disabled = false; load(); }
+});
+load();
+</script>
+</body>
+</html>
