@@ -5,7 +5,14 @@ every posting against a configurable profile, keeps track of which ads are
 still live, and shows everything in a local web dashboard.
 
 Built as a personal tool — and as a way to keep the whole stack (HTTP, HMAC
-signing, SQLite, a tiny Flask server, tests) in one honest, working project.
+signing, SQLite, a small stdlib HTTP server, tests) in one honest, working
+project.
+
+> **How this was built.** This is an **AI-assisted** project. It was developed
+> together with an AI coding assistant (opencode): I defined the requirements
+> and direction, tested everything and use it day to day; most of the code was
+> written by the assistant. I publish it as a real, working tool I use — with
+> that stated openly, and not as a claim of hand-written code.
 
 ## Features
 
@@ -108,3 +115,4 @@ python3 -m unittest discover -s tests
 ## Stack
 
 Python 3 (stdlib + `requests`) · SQLite · vanilla HTML/JS. No framework.
+The dashboard is served by a small `http.server`-based API, not a web framework.
